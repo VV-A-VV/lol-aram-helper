@@ -191,6 +191,43 @@ class FloatingWindow:
     def update_status(self, text):
         self.status_label.config(text=text)
 
+    def fetch_champion_detail(self, champ_id):
+        """获取英雄详情页数据"""
+        try:
+            url = f"https://hextech.dtodo.cn/zh-CN/champion-stats/{champ_id}"
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            req = urllib.request.Request(url, headers=headers)
+
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+
+            with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
+                html = response.read().decode('utf-8')
+
+            # 提取JSON-LD数据
+            json_ld_matches = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)
+
+            augments = []
+            items = []
+
+            for json_str in json_ld_matches:
+                data = json.loads(json_str)
+                if '@graph' in data:
+                    for item in data['@graph']:
+                        if item.get('@type') == 'ItemList':
+                            name = item.get('name', '')
+                            item_list = item.get('itemListElement', [])
+
+                            if '海克斯' in name or 'augment' in name.lower():
+                                augments = [elem['name'] for elem in item_list[:3]]
+                            elif '装备' in name or 'build' in name.lower():
+                                items = [elem['name'] for elem in item_list[:6]]
+
+            return augments, items
+        except:
+            return [], []
+
     def fetch_data_from_web(self):
         """从网络获取最新数据"""
         try:
@@ -198,10 +235,13 @@ class FloatingWindow:
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
             req = urllib.request.Request(url, headers=headers)
 
-            with urllib.request.urlopen(req, timeout=30) as response:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as response:
                 html = response.read().decode('utf-8')
 
-            # 提取表格内容
             tbody_match = re.search(r'<tbody[^>]*>(.*?)</tbody>', html, re.DOTALL)
             if not tbody_match:
                 return False
@@ -218,7 +258,7 @@ class FloatingWindow:
                 champ_id = champ_id_match.group(1)
                 cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
 
-                if len(cells) >= 6:
+                if len(cells) >= 4:
                     # 英雄名
                     name_match = re.search(r'>([^<]+)</a>', cells[1])
                     name = name_match.group(1).strip() if name_match else f'ID:{champ_id}'
@@ -232,13 +272,8 @@ class FloatingWindow:
                     wr_match = re.search(r'>(\d+\.\d+%)<', cells[3])
                     wr = wr_match.group(1) if wr_match else '?'
 
-                    # 符文（第6列）
-                    augments = []
-                    aug_matches = re.findall(r'alt="([^"]+)"', cells[5])
-                    if aug_matches:
-                        augments = aug_matches[:3]
-
-                    # 装备：从现有数据保留
+                    # 从详情页获取符文，装备保留旧数据
+                    augments, _ = self.fetch_champion_detail(champ_id)
                     existing = self.data['champions'].get(champ_id, {})
                     items = existing.get('items', [])
 
@@ -246,9 +281,11 @@ class FloatingWindow:
                         'name': name,
                         'tier': tier,
                         'winrate': wr,
-                        'augments': augments,
+                        'augments': augments if augments else existing.get('augments', []),
                         'items': items
                     }
+
+                    time.sleep(0.1)  # 避免请求过快
 
             if champions:
                 from datetime import datetime

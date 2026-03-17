@@ -218,8 +218,12 @@ class FloatingWindow:
                 champ_id = champ_id_match.group(1)
                 cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
 
-                if len(cells) >= 4:
-                    # 评级：移除HTML注释后提取
+                if len(cells) >= 6:
+                    # 英雄名
+                    name_match = re.search(r'>([^<]+)</a>', cells[1])
+                    name = name_match.group(1).strip() if name_match else f'ID:{champ_id}'
+
+                    # 评级
                     tier_cell = re.sub(r'<!--.*?-->', '', cells[2])
                     tier_match = re.search(r'T(\d)', tier_cell)
                     tier = f'T{tier_match.group(1)}' if tier_match else '?'
@@ -228,16 +232,22 @@ class FloatingWindow:
                     wr_match = re.search(r'>(\d+\.\d+%)<', cells[3])
                     wr = wr_match.group(1) if wr_match else '?'
 
-                    # 英雄名：从现有数据中获取，如果没有则用ID
+                    # 符文（第6列）
+                    augments = []
+                    aug_matches = re.findall(r'alt="([^"]+)"', cells[5])
+                    if aug_matches:
+                        augments = aug_matches[:3]
+
+                    # 装备：从现有数据保留
                     existing = self.data['champions'].get(champ_id, {})
-                    name = existing.get('name', f'ID:{champ_id}')
+                    items = existing.get('items', [])
 
                     champions[champ_id] = {
                         'name': name,
                         'tier': tier,
                         'winrate': wr,
-                        'augments': existing.get('augments', []),
-                        'items': existing.get('items', [])
+                        'augments': augments,
+                        'items': items
                     }
 
             if champions:

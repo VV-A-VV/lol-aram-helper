@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOL 海克斯大乱斗助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .result {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .hero-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .info-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        .link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #764ba2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .link:hover {
+            background: #5a3a7d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 LOL 海克斯大乱斗助手</h1>
+
+        <div class="search-box">
+            <input type="text" id="championInput" placeholder="输入英雄名称（如：亚索、劫、阿狸）" />
+            <button onclick="searchChampion()">查询</button>
+        </div>
+
+        <div class="result" id="result">
+            <div class="hero-name" id="heroName"></div>
+            <div class="info-item">
+                📊 <strong>数据来源：</strong>op.gg 海克斯大乱斗专区
+            </div>
+            <div class="info-item">
+                ⭐ 查看 Tier 等级评分
+            </div>
+            <div class="info-item">
+                🔮 查看推荐海克斯符文
+            </div>
+            <div class="info-item">
+                ⚔️ 查看推荐装备出装
+            </div>
+            <a class="link" id="opggLink" target="_blank">打开 op.gg 查看详情 →</a>
+        </div>
+    </div>
+
+    <script>
+        const championMap = {
+            '亚索': 'yasuo', '劫': 'zed', '阿狸': 'ahri', '盖伦': 'garen',
+            '拉克丝': 'lux', '金克斯': 'jinx', '卡特琳娜': 'katarina',
+            '提莫': 'teemo', '薇恩': 'vayne', '德莱文': 'draven',
+            '伊泽瑞尔': 'ezreal', '奎因': 'quinn', '锐雯': 'riven',
+            '亚索': 'yasuo', '劫': 'zed'
+        };
+
+        function searchChampion() {
+            const input = document.getElementById('championInput').value.trim();
+            if (!input) {
+                alert('请输入英雄名称');
+                return;
+            }
+
+            const englishName = championMap[input] || input.toLowerCase();
+            const url = `https://op.gg/zh-cn/lol/modes/aram-mayhem/${englishName}/build`;
+
+            document.getElementById('heroName').textContent = input;
+            document.getElementById('opggLink').href = url;
+            document.getElementById('result').classList.add('show');
+        }
+
+        document.getElementById('championInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchChampion();
+            }
+        });
+    </script>
+</body>
+</html>

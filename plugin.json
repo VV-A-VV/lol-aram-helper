@@ -1,0 +1,8 @@
+{
+  "name": "lol-aram-mayhem-helper",
+  "version": "1.0.0",
+  "description": "英雄联盟海克斯大乱斗助手 - 显示英雄等级、推荐符文和装备",
+  "author": "Your Name",
+  "commands": ["commands/*.md"],
+  "skills": ["skills/*.md"]
+}

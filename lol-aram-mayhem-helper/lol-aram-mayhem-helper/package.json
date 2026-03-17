@@ -1,0 +1,9 @@
+{
+  "name": "lol-aram-helper",
+  "version": "1.0.0",
+  "description": "自动检测LOL可选英雄",
+  "main": "auto-detect.js",
+  "dependencies": {
+    "node-fetch": "^2.6.1"
+  }
+}

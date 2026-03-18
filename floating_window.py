@@ -138,6 +138,8 @@ class FloatingWindow:
         self.token = None
         self.data = self.load_data()
         self.cards = []
+        self.last_champion_ids = []
+        self.in_game_champion = None  # 对局中的英雄ID
         threading.Thread(target=self.monitor, daemon=True).start()
 
     def load_data(self):
@@ -180,6 +182,22 @@ class FloatingWindow:
         try:
             with urllib.request.urlopen(req, context=ctx, timeout=2) as res:
                 return json.loads(res.read())
+        except:
+            return None
+
+    def get_gameflow_phase(self):
+        """获取游戏状态"""
+        if not self.port:
+            return None
+        url = f'https://127.0.0.1:{self.port}/lol-gameflow/v1/gameflow-phase'
+        auth = base64.b64encode(f'riot:{self.token}'.encode()).decode()
+        req = urllib.request.Request(url, headers={'Authorization': f'Basic {auth}'})
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=2) as res:
+                return res.read().decode().strip('"')
         except:
             return None
 
@@ -326,47 +344,81 @@ class FloatingWindow:
                     self.update_status("状态: 未检测到客户端")
                     self.clear_cards()
             else:
-                session = self.get_session()
-                if session:
-                    # 获取已选中的英雄
-                    selected_id = 0
-                    try:
-                        for ag in session.get('actions', []):
-                            for a in ag:
-                                if a.get('actorCellId') == session.get('localPlayerCellId') and a.get('championId'):
-                                    selected_id = a['championId']
-                    except:
-                        pass
+                # 获取游戏状态
+                phase = self.get_gameflow_phase()
 
-                    # 获取可交换的英雄
-                    bench = session.get('benchChampions', [])
-                    bench_ids = [c['championId'] for c in bench]
-
-                    # 合并所有英雄
-                    all_ids = [selected_id] + bench_ids if selected_id else bench_ids
-
-                    if all_ids:
-                        champ_count = len(self.data['champions'])
-                        self.update_status(f"状态: 已连接 | {champ_count} 英雄")
-
-                        # Clear old cards
+                # 对局中显示选中的英雄
+                if phase in ['InProgress', 'GameStart'] and self.in_game_champion:
+                    if self.last_champion_ids != [self.in_game_champion]:
+                        self.last_champion_ids = [self.in_game_champion]
+                        self.update_status("状态: 对局中")
                         self.clear_cards()
 
-                        # Create new cards
-                        for cid in all_ids:
-                            champ = self.data['champions'].get(str(cid), {})
-                            if not champ.get('name'):
-                                champ['name'] = f'ID:{cid}'
+                        champ = self.data['champions'].get(str(self.in_game_champion), {})
+                        if not champ.get('name'):
+                            champ['name'] = f'ID:{self.in_game_champion}'
 
-                            card = ChampionCard(self.scrollable_frame, champ, is_selected=(cid == selected_id))
-                            card.pack(fill='x', pady=3)
-                            self.cards.append(card)
+                        card = ChampionCard(self.scrollable_frame, champ, is_selected=True)
+                        card.pack(fill='x', pady=3)
+                        self.cards.append(card)
+
+                # 选人阶段
+                elif phase == 'ChampSelect':
+                    session = self.get_session()
+                    if session:
+                        # 获取已选中的英雄
+                        selected_id = 0
+                        try:
+                            for ag in session.get('actions', []):
+                                for a in ag:
+                                    if a.get('actorCellId') == session.get('localPlayerCellId') and a.get('championId'):
+                                        selected_id = a['championId']
+                                        self.in_game_champion = selected_id  # 保存选中的英雄
+                        except:
+                            pass
+
+                        # 获取可交换的英雄
+                        bench = session.get('benchChampions', [])
+                        bench_ids = [c['championId'] for c in bench]
+
+                        # 合并所有英雄
+                        all_ids = [selected_id] + bench_ids if selected_id else bench_ids
+
+                        if all_ids:
+                            # 只在英雄列表变化时才更新UI
+                            if all_ids != self.last_champion_ids:
+                                self.last_champion_ids = all_ids
+                                champ_count = len(self.data['champions'])
+                                self.update_status(f"状态: 已连接 | {champ_count} 英雄")
+
+                                # Clear old cards
+                                self.clear_cards()
+
+                                # Create new cards
+                                for cid in all_ids:
+                                    champ = self.data['champions'].get(str(cid), {})
+                                    if not champ.get('name'):
+                                        champ['name'] = f'ID:{cid}'
+
+                                    card = ChampionCard(self.scrollable_frame, champ, is_selected=(cid == selected_id))
+                                    card.pack(fill='x', pady=3)
+                                    self.cards.append(card)
+                        else:
+                            if self.last_champion_ids:
+                                self.last_champion_ids = []
+                                self.update_status("状态: 等待选人...")
+                                self.clear_cards()
                     else:
-                        self.update_status("状态: 等待选人...")
+                        self.update_status("状态: 等待进入选人...")
                         self.clear_cards()
+
+                # 其他状态清空显示
                 else:
-                    self.update_status("状态: 等待进入选人...")
-                    self.clear_cards()
+                    if self.last_champion_ids:
+                        self.last_champion_ids = []
+                        self.in_game_champion = None
+                        self.clear_cards()
+                        self.update_status("状态: 已连接")
             time.sleep(2)
 
     def run(self):

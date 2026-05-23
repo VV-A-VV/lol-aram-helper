@@ -7,6 +7,7 @@ PyInstaller.__main__.run([
     "--onefile",
     "--windowed",
     "--add-data=champions_data.json;.",
+    "--collect-all=rapidocr_onnxruntime",
     "--hidden-import=psutil",
     "--hidden-import=rapidocr_onnxruntime",
     "--hidden-import=mss",

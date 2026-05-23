@@ -18,6 +18,8 @@ build/
 *_temp.json
 *_raw.json
 test_*.py
+!tests/
+!tests/test_*.py
 debug*.py
 debug*.json
 

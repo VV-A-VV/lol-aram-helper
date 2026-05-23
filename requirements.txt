@@ -1,2 +1,7 @@
 psutil
 pyinstaller
+rapidocr-onnxruntime
+mss
+keyboard
+opencv-python
+numpy

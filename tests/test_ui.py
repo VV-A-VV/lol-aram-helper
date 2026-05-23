@@ -2,7 +2,13 @@ import unittest
 
 from aram_helper.models import ChampionRecommendation
 from aram_helper.recommendations import AugmentRank, RecommendationEngine
-from aram_helper.ui import build_overlay_title, build_rank_rows, format_rank_line, rank_style
+from aram_helper.ui import (
+    build_overlay_title,
+    build_rank_rows,
+    format_card_augments,
+    format_rank_line,
+    rank_style,
+)
 
 
 class UiFormattingTest(unittest.TestCase):
@@ -55,6 +61,11 @@ class UiFormattingTest(unittest.TestCase):
         title = build_overlay_title(champion, 2)
 
         self.assertEqual(title, "疾风剑豪 亚索 海克斯推荐 #2 (F6)")
+
+    def test_card_augment_summary_limits_full_detail_list(self):
+        text = format_card_augments(("炼狱导管", "超凡邪恶", "质变：棱彩阶", "祖母的辣椒油"))
+
+        self.assertEqual(text, "炼狱导管 / 超凡邪恶 / 质变：棱彩阶 / 等 4 个")
 
 
 if __name__ == "__main__":

@@ -50,6 +50,17 @@ def format_rank_line(slot_index: int, augment_text: str, rank: AugmentRank) -> s
     return f"{style['prefix']} {slot_index}. {name}{suffix}"
 
 
+def format_card_augments(augments: tuple[str, ...], limit: int = 3) -> str:
+    if not augments:
+        return ""
+
+    visible = augments[:limit]
+    text = " / ".join(visible)
+    if len(augments) > limit:
+        text = f"{text} / 等 {len(augments)} 个"
+    return text
+
+
 def build_rank_rows(champion: ChampionRecommendation, augments: tuple[str, ...], recommendation_engine) -> list[dict]:
     rows = []
     for index, augment in enumerate(augments, 1):
@@ -137,7 +148,7 @@ class ChampionCard(tk.Frame):
         row.pack(fill="x", pady=(4, 0))
         label = tk.Label(
             row,
-            text=" / ".join(augments),
+            text=format_card_augments(augments),
             fg=COLORS["text_muted"],
             bg=bg,
             font=("Microsoft YaHei UI", 9),
